@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="de"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Nightshift</title>
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nightshift">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{--accent:#ff2d55;--bg:#000;--fg:#fff;--muted:rgba(255,255,255,.62);--card:#16181d;--line:rgba(255,255,255,.1)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden;overscroll-behavior:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+/* Feed */
+#feed{position:fixed;inset:0;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#feed::-webkit-scrollbar{display:none}
+.slide{height:100dvh;height:var(--vh,100dvh);scroll-snap-align:start;scroll-snap-stop:always;position:relative;display:flex;align-items:center;justify-content:center;background:#000;overflow:hidden}
+.slide video,.slide img{max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain;display:block}
+.slide .bgblur{position:absolute;inset:-40px;background-size:cover;background-position:center;filter:blur(40px) brightness(.35);opacity:.9}
+.slide .bgblur+*{position:relative}
+.slide.new::after{content:"● Neu";position:absolute;top:calc(env(safe-area-inset-top) + 58px);left:16px;font-size:12px;font-weight:800;color:var(--accent);background:rgba(0,0,0,.45);padding:4px 9px;border-radius:999px}
+/* Oberleiste */
+.top{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;gap:6px;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;background:linear-gradient(rgba(0,0,0,.55),transparent);pointer-events:none}
+.top>*{pointer-events:auto}
+.tabs{display:flex;gap:16px;margin:0 auto;font-weight:700;font-size:16px}
+.tabs button{color:var(--muted);padding:6px 2px;position:relative}.tabs button.on{color:#fff}
+.tabs button.on::after{content:"";position:absolute;left:25%;right:25%;bottom:0;height:2px;border-radius:2px;background:#fff}
+.tabs small{font-size:11px;opacity:.6;margin-left:3px;font-weight:600}
+.ib{width:40px;height:40px;border-radius:50%;display:grid;place-items:center}
+.ib svg{width:24px;height:24px}.ib.on{color:var(--accent)}
+/* Rechte Leiste */
+.side{position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 110px);z-index:10;display:flex;flex-direction:column;gap:18px;align-items:center}
+.side button{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:600;text-shadow:0 1px 3px #000}
+.side .c{width:48px;height:48px;border-radius:50%;background:rgba(0,0,0,.35);display:grid;place-items:center;backdrop-filter:blur(6px)}
+.side svg{width:27px;height:27px}.side .liked .c{color:var(--accent)}
+/* Unten */
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:9;padding:0 74px calc(env(safe-area-inset-bottom) + 16px) 14px;background:linear-gradient(transparent,rgba(0,0,0,.6));pointer-events:none}
+.bottom b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px #000}
+.bottom span{font-size:12px;color:var(--muted)}
+.prog{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 2px);height:22px;z-index:11;display:flex;align-items:flex-end;touch-action:none}
+.prog i{display:block;height:3px;width:100%;background:rgba(255,255,255,.22);position:relative}
+.prog i b{position:absolute;left:0;top:0;bottom:0;background:#fff;width:0}
+.prog.drag i{height:6px}.prog.hidden{display:none}
+.time{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 34px);transform:translateX(-50%);font-size:22px;font-weight:800;text-shadow:0 2px 8px #000;z-index:12;display:none}
+.prog.drag~.time{display:block}
+.pill{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 64px);transform:translateX(-50%);z-index:12;background:rgba(0,0,0,.6);padding:8px 14px;border-radius:999px;font-size:13px;font-weight:700;display:none}
+.pill.show{display:block}
+.pause{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;width:84px;height:84px;border-radius:50%;background:rgba(0,0,0,.4);display:none;place-items:center;pointer-events:none}
+.pause.show{display:grid}.pause svg{width:40px;height:40px;margin-left:6px}
+.heart{position:fixed;z-index:13;pointer-events:none;width:110px;height:110px;margin:-55px 0 0 -55px;color:var(--accent);animation:pop .8s ease forwards}
+@keyframes pop{0%{transform:scale(.3);opacity:0}25%{transform:scale(1.15);opacity:1}60%{transform:scale(1)}100%{transform:scale(1.4) translateY(-40px);opacity:0}}
+/* Leer / Start */
+.start{position:fixed;inset:0;z-index:5;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:30px 24px;text-align:center}
+.start.show{display:flex}
+.start img{width:84px;height:84px;border-radius:20px}
+.start h1{font-size:26px}.start p{color:var(--muted);font-size:15px;line-height:1.5;max-width:420px}
+.big{width:min(360px,100%);padding:16px;border-radius:14px;font-weight:700;font-size:16px;background:var(--accent);color:#fff;display:flex;flex-direction:column;gap:3px;align-items:center}
+.big small{font-weight:500;font-size:12px;opacity:.85}
+.big.alt{background:#23262d}
+/* Menü */
+.panel{position:fixed;inset:0;z-index:30;display:none}
+.panel.show{display:block}
+.panel .bg{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+.panel .box{position:absolute;left:0;right:0;bottom:0;max-height:88dvh;overflow:auto;background:#141519;border-radius:20px 20px 0 0;padding:18px 18px calc(env(safe-area-inset-bottom) + 18px);display:flex;flex-direction:column;gap:12px}
+.panel h2{font-size:19px;display:flex;align-items:center}.panel h2 button{margin-left:auto;font-size:26px;color:var(--muted);padding:0 6px}
+.panel .row{display:flex;gap:10px}.panel .row>*{flex:1}
+.btn{padding:13px;border-radius:12px;background:#23262d;font-weight:700;font-size:14px;text-align:center}
+.btn.p{background:var(--accent)}.btn.bad{color:#ff8fa3}
+.hint{font-size:12.5px;color:var(--muted);line-height:1.5}
+.store{background:#1c1e24;border-radius:12px;padding:12px;font-size:13px;display:flex;flex-direction:column;gap:6px}
+.store .bar{height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden}.store .bar i{display:block;height:100%;background:var(--accent)}
+.sw{display:flex;align-items:center;gap:10px;font-size:14px}.sw input{width:20px;height:20px;accent-color:var(--accent)}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 90px);transform:translateX(-50%);z-index:40;background:rgba(30,32,38,.96);padding:11px 16px;border-radius:12px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;max-width:88vw;text-align:center}
+.toast.show{opacity:1}.toast.err{background:#8a1730}
+.busy{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.75);display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-weight:700}
+.busy.show{display:flex}.busy .bar{width:min(280px,70vw);height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}.busy .bar i{display:block;height:100%;background:var(--accent);width:0}
+input[type=file]{display:none}
+body.empty .side,body.empty .bottom,body.empty .prog,body.empty .pill,body.empty #autoBtn,body.empty #shufBtn{display:none!important}
+</style></head>
+<body>
+<div id="feed"></div>
+
+<div class="top">
+  <button class="ib" id="menuBtn" aria-label="Menü"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <div class="tabs"><button class="on" data-v="all">Alle<small id="cAll"></small></button><button data-v="likes">Likes<small id="cLikes"></small></button></div>
+  <button class="ib" id="autoBtn" aria-label="Autoplay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z" fill="currentColor"/></svg></button>
+  <button class="ib" id="shufBtn" aria-label="Zufällig"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button>
+</div>
+
+<div class="side" id="side">
+  <button id="likeBtn"><span class="c"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.8 4.5c2.1 0 3.6 1.1 4.4 2.5.8-1.4 2.3-2.5 4.4-2.5 3.8 0 5.9 3.9 4.4 7.3C19.5 16.4 12 21 12 21z"/></svg></span>Like</button>
+  <button id="muteBtn"><span class="c" id="muteIc"></span><span id="muteLbl">Ton</span></button>
+  <button id="hideBtn"><span class="c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></span>Entfernen</button>
+</div>
+<div class="bottom"><b id="name"></b><span id="meta"></span></div>
+<div class="prog hidden" id="prog"><i><b id="progFill"></b></i></div>
+<div class="time" id="time"></div>
+<div class="pill" id="pill">🔇 Tippen für Ton</div>
+<div class="pause" id="pause"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg></div>
+
+<div class="start" id="start">
+  <img src="icon-192.png" alt="">
+  <h1>Nightshift</h1>
+  <p>Deine Videos & Bilder vom Handy als Feed – ganz ohne PC. Nichts wird hochgeladen, alles bleibt auf deinem Handy.</p>
+  <button class="big" data-add="save">Videos & Bilder wählen<small>In Nightshift speichern – sind beim nächsten Öffnen wieder da</small></button>
+  <button class="big alt" data-add="temp">Nur jetzt ansehen<small>Braucht keinen Extra-Speicher</small></button>
+  <button class="big alt folderOnly" data-add="folder">Ganzen Ordner wählen<small>Android – falls dein Handy es kann</small></button>
+</div>
+
+<div class="panel" id="panel"><div class="bg"></div><div class="box">
+  <h2>Nightshift<button id="pClose" aria-label="Schließen">×</button></h2>
+  <div class="row"><button class="btn p" data-add="save">+ Speichern</button><button class="btn" data-add="temp">+ Nur ansehen</button></div>
+  <button class="btn folderOnly" data-add="folder">+ Ganzen Ordner wählen</button>
+  <div class="store" id="store"></div>
+  <label class="sw"><input type="checkbox" id="newFirst" checked> Ungesehenes zuerst</label>
+  <div class="row"><button class="btn" id="seenReset">Gesehen zurücksetzen</button><button class="btn bad" id="wipe">Alles entfernen</button></div>
+  <p class="hint"><b>Entfernen</b> nimmt Dateien nur aus Nightshift heraus – auf deinem Handy bleiben sie. Gespeicherte Dateien belegen zusätzlichen Platz (es ist eine Kopie).</p>
+  <p class="hint" id="installHint"></p>
+</div></div>
+
+<div class="busy" id="busy"><span id="busyText">Speichere …</span><div class="bar"><i id="busyBar"></i></div></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="fileSave" accept="video/*,image/*" multiple>
+<input type="file" id="fileTemp" accept="video/*,image/*" multiple>
+<input type="file" id="fileDir" multiple webkitdirectory>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const IOS=/iP(hone|od|ad)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const ICON={
+  on:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
+  off:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>',
+  heart:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.8 4.5c2.1 0 3.6 1.1 4.4 2.5.8-1.4 2.3-2.5 4.4-2.5 3.8 0 5.9 3.9 4.4 7.3C19.5 16.4 12 21 12 21z"/></svg>'
+};
+const VIDEO_EXT=/\.(mp4|m4v|mov|webm|mkv|3gp|avi)$/i, IMG_EXT=/\.(jpe?g|png|gif|webp|heic|heif|avif|bmp)$/i;
+const kindOf=f=>(f.type||'').startsWith('video/')||VIDEO_EXT.test(f.name)?'video':(f.type||'').startsWith('image/')||IMG_EXT.test(f.name)?'image':null;
+const keyOf=f=>f.name+'|'+f.size+'|'+(f.lastModified||0);
+const fmt=b=>{const u=['B','KB','MB','GB'];let i=0;while(b>=1024&&i<3){b/=1024;i++}return (i?b.toFixed(b<10?1:0):b)+' '+u[i]};
+function toast(m,err){const t=$('toast');t.textContent=m;t.classList.toggle('err',!!err);t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),err?4500:2200)}
+
+// ---------- Speicher (IndexedDB): Dateien + Likes/Gesehen ----------
+let db;
+function openDB(){return new Promise((ok,no)=>{const r=indexedDB.open('nightshift-mobil',1);
+  r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore('items',{keyPath:'id'});d.createObjectStore('blobs');d.createObjectStore('marks');d.createObjectStore('prefs')};
+  r.onsuccess=()=>ok(db=r.result);r.onerror=()=>no(r.error)})}
+function tx(store,mode,fn){return new Promise((ok,no)=>{const t=db.transaction(store,mode),s=t.objectStore(store);let res;const r=fn(s);if(r)r.onsuccess=()=>{res=r.result};t.oncomplete=()=>ok(res);t.onerror=()=>no(t.error);t.onabort=()=>no(t.error)})}
+const dbGetAll=s=>tx(s,'readonly',st=>st.getAll());
+const dbGet=(s,k)=>tx(s,'readonly',st=>st.get(k));
+const dbPut=(s,v,k)=>tx(s,'readwrite',st=>k===undefined?st.put(v):st.put(v,k));
+const dbDel=(s,k)=>tx(s,'readwrite',st=>st.delete(k));
+async function allMarks(){const out=new Map();if(!db)return out;await new Promise((ok,no)=>{const t=db.transaction('marks'),c=t.objectStore('marks').openCursor();c.onsuccess=()=>{const cur=c.result;if(cur){out.set(cur.key,cur.value);cur.continue()}else ok()};c.onerror=()=>no(c.error)});return out}
+function saveMark(it){if(db)dbPut('marks',{liked:!!it.liked,seenAt:it.seenAt||0},it.key).catch(()=>{})}
+
+// ---------- Zustand ----------
+let all=[],items=[],cur=-1,view='all',shuffled=false,autoplay=false,muted=true,newFirst=true,H=innerHeight;
+const urls=new Map();          // id -> objectURL (nur für die Nähe)
+let temp=new Map();            // id -> File (nur-ansehen)
+async function pref(k,d){try{const v=await dbGet('prefs',k);return v===undefined?d:v}catch(e){return d}}
+const setPref=(k,v)=>dbPut('prefs',v,k).catch(()=>{});
+
+async function loadAll(){
+  const marks=await allMarks();
+  const stored=await dbGetAll('items');
+  all=stored.map(x=>Object.assign(x,{stored:true},marks.get(x.key)||{}));
+  for(const [id,f] of temp){const k=keyOf(f);if(!all.some(x=>x.key===k))all.push(Object.assign({id,key:k,name:f.name,kind:kindOf(f),size:f.size,mtime:f.lastModified||0,stored:false},marks.get(k)||{}))}
+}
+function build(keepId){
+  items=view==='likes'?all.filter(x=>x.liked):all.slice();
+  const fresh=items.filter(x=>!x.seenAt),old=items.filter(x=>x.seenAt);
+  const mix=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+  if(!newFirst)items=shuffled?mix(items):items.sort((a,b)=>b.mtime-a.mtime);
+  else items=(shuffled?mix(fresh):fresh.sort((a,b)=>b.mtime-a.mtime)).concat((shuffled?mix(old):old).sort((a,b)=>Math.floor(a.seenAt/3600e3)-Math.floor(b.seenAt/3600e3)));
+  render(keepId);
+}
+function counts(){$('cAll').textContent=all.length||'';$('cLikes').textContent=all.filter(x=>x.liked).length||''}
+
+// ---------- Feed ----------
+const feed=$('feed');
+function render(keepId){
+  for(const u of urls.values())URL.revokeObjectURL(u);urls.clear();
+  feed.innerHTML='';counts();
+  $('start').classList.toggle('show',!items.length&&view==='all');
+  document.body.classList.toggle('empty',!items.length);
+  if(!items.length){cur=-1;$('name').textContent=view==='likes'?'Noch keine Likes – Doppeltipp auf ein Video':'';$('meta').textContent='';$('prog').classList.add('hidden');return}
+  const frag=document.createDocumentFragment();
+  items.forEach((it,i)=>{const s=document.createElement('div');s.className='slide';s.dataset.i=i;it.el=s;frag.appendChild(s)});
+  feed.appendChild(frag);
+  let i=keepId?Math.max(0,items.findIndex(x=>x.id===keepId)):0;
+  cur=-1;feed.scrollTop=i*H;setCurrent(i);
+}
+async function urlFor(it){
+  if(urls.has(it.id))return urls.get(it.id);
+  let blob=it.stored?await dbGet('blobs',it.id):temp.get(it.id);
+  if(!blob)return null;
+  const u=URL.createObjectURL(blob);urls.set(it.id,u);return u;
+}
+function unmount(it){
+  if(!it||!it.el)return;const v=it.el.querySelector('video');if(v){v.pause();v.removeAttribute('src');v.load()}
+  it.el.innerHTML='';it.el.dataset.m='';
+  if(urls.has(it.id)){URL.revokeObjectURL(urls.get(it.id));urls.delete(it.id)}
+}
+async function mount(it,active){
+  if(!it||!it.el||it.el.dataset.m)return;it.el.dataset.m='1';
+  const u=await urlFor(it);if(!u||!it.el.dataset.m)return;
+  it.el.classList.toggle('new',!it.seenAt);
+  if(it.kind==='video'){
+    const v=document.createElement('video');v.playsInline=true;v.setAttribute('playsinline','');v.muted=muted;v.loop=!autoplay;v.preload='metadata';v.src=u;
+    v.addEventListener('ended',()=>{if(autoplay&&items[cur]===it)go(1)});
+    v.addEventListener('timeupdate',()=>{if(items[cur]===it)updProg()});
+    it.el.appendChild(v);
+    if(items[cur]===it)play(v);
+  }else{
+    const bg=document.createElement('div');bg.className='bgblur';bg.style.backgroundImage=`url("${u}")`;
+    const im=document.createElement('img');im.src=u;im.alt='';im.decoding='async';
+    im.onerror=()=>{if(/heic|heif/i.test(it.name))it.el.innerHTML='<p style="color:#aaa;padding:30px;text-align:center">HEIC-Bilder kann dieser Browser nicht anzeigen.</p>'};
+    it.el.append(bg,im);
+  }
+}
+function play(v){v.muted=muted;const p=v.play();if(p)p.catch(()=>{if(!muted)return;v.muted=true;v.play().catch(()=>{})})}
+let seenT=0,imgT=0,imgStart=0;
+function setCurrent(i){
+  if(i===cur||i<0||i>=items.length)return;
+  const prev=items[cur];cur=i;const it=items[i];
+  if(prev&&prev.el){const v=prev.el.querySelector('video');if(v)v.pause()}
+  for(let j=0;j<items.length;j++){if(Math.abs(j-i)<=2)mount(items[j]);else if(items[j].el&&items[j].el.dataset.m)unmount(items[j])}
+  const v=it.el.querySelector('video');if(v){v.loop=!autoplay;play(v)}
+  $('pause').classList.remove('show');
+  clearTimeout(seenT);if(!it.seenAt)seenT=setTimeout(()=>{if(items[cur]===it){it.seenAt=Date.now();saveMark(it)}},600);
+  clearTimeout(imgT);imgStart=Date.now();if(it.kind==='image'&&autoplay)imgT=setTimeout(()=>{if(items[cur]===it)go(1)},5000);
+  updUI();
+}
+function updUI(){
+  const it=items[cur];if(!it)return;
+  $('name').textContent=it.name;
+  $('meta').textContent=fmt(it.size)+(it.stored?'':' · nur angesehen')+(it.mtime?' · '+new Date(it.mtime).toLocaleDateString('de-DE'):'');
+  $('likeBtn').classList.toggle('liked',!!it.liked);
+  $('muteIc').innerHTML=muted?ICON.off:ICON.on;$('muteLbl').textContent=muted?'Stumm':'Ton';
+  $('pill').classList.toggle('show',muted&&it.kind==='video'&&!mutedHintDone);
+  $('prog').classList.toggle('hidden',it.kind!=='video'&&!autoplay);
+  $('autoBtn').classList.toggle('on',autoplay);$('shufBtn').classList.toggle('on',shuffled);
+  updProg();
+}
+let mutedHintDone=false;
+function vid(){const it=items[cur];return it&&it.el?it.el.querySelector('video'):null}
+function updProg(){
+  const it=items[cur];if(!it)return;let p=0;
+  if(it.kind==='video'){const v=vid();if(v&&v.duration)p=v.currentTime/v.duration}
+  else if(autoplay)p=Math.min(1,(Date.now()-imgStart)/5000);
+  $('progFill').style.width=(p*100).toFixed(2)+'%';
+}
+setInterval(()=>{if(items[cur]&&items[cur].kind==='image'&&autoplay)updProg()},200);
+function go(d){const n=cur+d;if(n>=items.length){if(items.length){feed.scrollTo({top:0,behavior:'instant'});setCurrent(0);toast('Alles durch – wieder von vorn')}return}if(n<0)return;feed.scrollTo({top:n*H,behavior:'smooth'})}
+let raf=0;
+feed.addEventListener('scroll',()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;const i=Math.round(feed.scrollTop/H);if(Math.abs(feed.scrollTop-i*H)<H*.35)setCurrent(Math.max(0,Math.min(items.length-1,i)))})},{passive:true});
+addEventListener('resize',()=>{H=innerHeight;document.documentElement.style.setProperty('--vh',H+'px');if(cur>=0)feed.scrollTop=cur*H});
+document.documentElement.style.setProperty('--vh',H+'px');
+
+// Tippen = Pause/Ton an, Doppeltipp = Like
+let lastTap=0,tapT=0;
+feed.addEventListener('click',e=>{
+  const now=Date.now();
+  if(now-lastTap<300){clearTimeout(tapT);lastTap=0;like(true,e.clientX,e.clientY);return}
+  lastTap=now;
+  tapT=setTimeout(()=>{
+    const v=vid();
+    if(muted&&v){muted=false;mutedHintDone=true;v.muted=false;if(v.paused)play(v);updUI();return}
+    if(!v)return;
+    if(v.paused){play(v);$('pause').classList.remove('show')}else{v.pause();$('pause').classList.add('show')}
+  },260);
+});
+function like(on,x,y){
+  const it=items[cur];if(!it)return;
+  it.liked=on===undefined?!it.liked:on;saveMark(it);updUI();counts();
+  if(it.liked&&x!==undefined){const h=document.createElement('div');h.className='heart';h.innerHTML=ICON.heart;h.style.left=x+'px';h.style.top=y+'px';document.body.appendChild(h);setTimeout(()=>h.remove(),850)}
+  if(navigator.vibrate)try{navigator.vibrate(12)}catch(e){}
+}
+$('likeBtn').onclick=()=>like();
+$('muteBtn').onclick=()=>{muted=!muted;mutedHintDone=true;const v=vid();if(v){v.muted=muted;if(v.paused)play(v)}updUI()};
+$('hideBtn').onclick=()=>removeCur();
+$('autoBtn').onclick=()=>{autoplay=!autoplay;setPref('autoplay',autoplay);const v=vid();if(v)v.loop=!autoplay;
+  clearTimeout(imgT);const it=items[cur];if(it&&it.kind==='image'&&autoplay){imgStart=Date.now();imgT=setTimeout(()=>{if(items[cur]===it)go(1)},5000)}
+  toast(autoplay?'Autoplay an – Bilder je 5 Sek.':'Autoplay aus');updUI()};
+$('shufBtn').onclick=()=>{shuffled=!shuffled;setPref('shuffled',shuffled);toast(shuffled?'Zufällige Reihenfolge':'Neueste zuerst');build(items[cur]&&items[cur].id)};
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{view=b.dataset.v;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));build()});
+
+// Zeitleiste zum Spulen
+(function(){const pr=$('prog');let on=false;
+  const at=e=>{const v=vid();if(!v||!v.duration)return;const x=(e.touches?e.touches[0]:e).clientX,p=Math.max(0,Math.min(1,x/innerWidth));v.currentTime=p*v.duration;$('progFill').style.width=p*100+'%';
+    const t=p*v.duration;$('time').textContent=`${t/60|0}:${String(t%60|0).padStart(2,'0')} / ${v.duration/60|0}:${String(v.duration%60|0).padStart(2,'0')}`};
+  pr.addEventListener('pointerdown',e=>{on=true;pr.classList.add('drag');pr.setPointerCapture(e.pointerId);at(e)});
+  pr.addEventListener('pointermove',e=>{if(on)at(e)});
+  const end=()=>{on=false;pr.classList.remove('drag')};pr.addEventListener('pointerup',end);pr.addEventListener('pointercancel',end);
+})();
+
+async function removeCur(){
+  const it=items[cur];if(!it)return;
+  const idx=cur;unmount(it);
+  all=all.filter(x=>x!==it);items.splice(idx,1);it.el.remove();
+  if(it.stored){try{await dbDel('items',it.id);await dbDel('blobs',it.id)}catch(e){}}else temp.delete(it.id);
+  toast('Aus Nightshift entfernt – auf dem Handy bleibt die Datei');
+  items.forEach((x,i)=>x.el.dataset.i=i);
+  cur=-1;if(!items.length){render();return}
+  const n=Math.min(idx,items.length-1);feed.scrollTop=n*H;setCurrent(n);counts();showStore();
+}
+
+// ---------- Dateien hinzufügen ----------
+function pick(mode){const el=mode==='save'?$('fileSave'):mode==='temp'?$('fileTemp'):$('fileDir');el.value='';el.click()}
+document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>pick(b.dataset.add));
+$('fileTemp').onchange=e=>addFiles([...e.target.files],false);
+$('fileSave').onchange=e=>addFiles([...e.target.files],true);
+$('fileDir').onchange=e=>addFiles([...e.target.files],true);
+async function addFiles(files,store){
+  files=files.filter(f=>kindOf(f));
+  if(!files.length){toast('Keine Videos oder Bilder dabei',true);return}
+  const have=new Set(all.map(x=>x.key));
+  const fresh=files.filter(f=>!have.has(keyOf(f)));
+  if(!fresh.length){toast('Schon alles in Nightshift');return}
+  closePanel();
+  if(store){
+    try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}
+    $('busy').classList.add('show');let done=0,failed=0;
+    for(const f of fresh){
+      $('busyText').textContent=`Speichere ${done+1} von ${fresh.length} …`;$('busyBar').style.width=(done/fresh.length*100)+'%';
+      const id='s'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+      const meta={id,key:keyOf(f),name:f.name,kind:kindOf(f),size:f.size,mtime:f.lastModified||Date.now(),added:Date.now()};
+      try{
+        const blob=f.slice(0,f.size,f.type);           // eigene Kopie, unabhängig von der Auswahl
+        await dbPut('blobs',blob,id);await dbPut('items',meta);
+        all.push(Object.assign(meta,{stored:true}));
+      }catch(e){failed++;if(/quota/i.test(String(e&&e.name))){toast('Handy-Speicher für Nightshift voll – nimm „Nur jetzt ansehen“',true);break}}
+      done++;
+    }
+    $('busy').classList.remove('show');
+    toast(failed?`${done-failed} gespeichert, ${failed} nicht`:`${done} ${done===1?'Datei':'Dateien'} gespeichert`,!!failed);
+  }else{
+    for(const f of fresh){const id='t'+Math.random().toString(36).slice(2,10);temp.set(id,f);
+      all.push({id,key:keyOf(f),name:f.name,kind:kindOf(f),size:f.size,mtime:f.lastModified||Date.now(),stored:false})}
+    const marks=await allMarks();for(const x of all)if(!x.stored)Object.assign(x,marks.get(x.key)||{});
+    toast(`${fresh.length} zum Ansehen hinzugefügt`);
+  }
+  view='all';document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x.dataset.v==='all'));
+  build();showStore();
+}
+
+// ---------- Menü ----------
+function openPanel(){try{history.pushState({p:1},'')}catch(e){}$('panel').classList.add('show');showStore();const v=vid();if(v)v.pause()}
+function closePanel(){if(!$('panel').classList.contains('show'))return;$('panel').classList.remove('show');const v=vid();if(v&&!$('pause').classList.contains('show'))play(v)}
+addEventListener('popstate',closePanel);
+$('menuBtn').onclick=openPanel;$('pClose').onclick=()=>history.back();$('panel').querySelector('.bg').onclick=()=>history.back();
+async function showStore(){
+  const st=all.filter(x=>x.stored),tm=all.length-st.length,sz=st.reduce((a,x)=>a+x.size,0);
+  let h=`<div><b>${st.length}</b> gespeichert (${fmt(sz)})${tm?` · <b>${tm}</b> nur angesehen`:''}</div>`;
+  try{const e=await navigator.storage.estimate();if(e&&e.quota){h+=`<div class="bar"><i style="width:${Math.min(100,e.usage/e.quota*100).toFixed(1)}%"></i></div><div class="hint">${fmt(e.usage)} von ${fmt(e.quota)} App-Speicher belegt</div>`}}catch(e){}
+  $('store').innerHTML=h;
+}
+$('newFirst').onchange=e=>{newFirst=e.target.checked;setPref('newFirst',newFirst);build(items[cur]&&items[cur].id)};
+$('seenReset').onclick=async()=>{for(const x of all){x.seenAt=0;saveMark(x)}toast('Alles ist wieder neu');history.back();build()};
+$('wipe').onclick=async()=>{if(!confirm('Alle Dateien aus Nightshift entfernen? Auf dem Handy bleiben sie.'))return;
+  await tx('items','readwrite',s=>s.clear());await tx('blobs','readwrite',s=>s.clear());temp.clear();all=[];history.back();build();showStore();toast('Nightshift ist leer')};
+
+// Tastatur (falls am Tablet/PC)
+addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='j'){e.preventDefault();go(1)}else if(e.key==='ArrowUp'||e.key==='k'){e.preventDefault();go(-1)}else if(e.key==='l')like();else if(e.key==='m')$('muteBtn').click()});
+// Bildschirm anlassen, solange ein Video läuft
+let wake=null;async function keepAwake(){try{if('wakeLock' in navigator&&!document.hidden)wake=await navigator.wakeLock.request('screen')}catch(e){}}
+document.addEventListener('visibilitychange',()=>{const v=vid();if(document.hidden){if(v)v.pause()}else{keepAwake();if(v&&!$('pause').classList.contains('show'))play(v)}});
+
+// Start
+(async()=>{
+  if(IOS||!('webkitdirectory' in document.createElement('input')))document.querySelectorAll('.folderOnly').forEach(b=>b.style.display='none');
+  $('installHint').innerHTML=matchMedia('(display-mode: standalone)').matches||navigator.standalone?'':
+    IOS?'<b>Als App ablegen:</b> In Safari <b>Teilen</b> ↑ → <b>Zum Home-Bildschirm</b>. Danach startet Nightshift auch ohne Internet.'
+       :'<b>Als App ablegen:</b> In Chrome <b>⋮</b> → <b>App installieren</b> bzw. <b>Zum Startbildschirm hinzufügen</b>. Danach startet Nightshift auch ohne Internet.';
+  try{await openDB()}catch(e){toast('Speicher nicht verfügbar – privater Modus? Dann geht nur „Nur jetzt ansehen“.',true);db=null}
+  if(db){shuffled=await pref('shuffled',false);autoplay=await pref('autoplay',false);newFirst=await pref('newFirst',true);$('newFirst').checked=newFirst;await loadAll()}
+  build();keepAwake();
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
+</script>
+</body></html>
