@@ -14,7 +14,7 @@
 <style>
 :root{--accent:#ff2d55;--bg:#000;--fg:#fff;--muted:rgba(255,255,255,.62);--card:#16181d;--line:rgba(255,255,255,.1)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden;overscroll-behavior:none}
+html,body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation;height:100%;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden;overscroll-behavior:none}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 /* Feed */
 #feed{position:fixed;inset:0;touch-action:pan-y;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -114,6 +114,7 @@ body:not(.native) .nativeOnly{display:none!important}
 .flist .all{border-bottom:1px solid var(--line);border-radius:0;margin-bottom:4px}
 .own{display:flex;align-items:center;gap:12px;padding:10px 6px;font-size:15px}.own .t{flex:1;min-width:0}.own b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .own small{color:var(--muted);font-size:12px}.own button{font-size:24px;color:var(--muted);padding:0 10px}
+.ver{text-align:center;font-size:11px;color:rgba(255,255,255,.35);margin-top:4px}
 .ownadd{width:100%;margin:6px 0 10px}
 body.empty .side,body.empty .bottom,body.empty .prog,body.empty .pill,body.empty #autoBtn,body.empty #shufBtn{display:none!important}
 </style></head>
@@ -167,6 +168,7 @@ body.empty .side,body.empty .bottom,body.empty .prog,body.empty .pill,body.empty
   <p class="hint nativeOnly"><b>Delete</b> moves gallery files to your phone’s trash (Android 11+: recoverable for 30 days). Android asks you to confirm each time. In <b>your own folders</b> files are deleted permanently – there’s no trash there.</p>
   <p class="hint"><b>Gestures:</b> tap = pause / play · double-tap left / right = 5 s back / ahead · double-tap middle = like · swipe right = like & next, swipe left = next · hold = 2× speed (hold on the left = rewind) · <b>tap with two fingers = hide / show the buttons</b> (timeline and mute stay)</p>
   <p class="hint webOnly" id="installHint"></p>
+  <p class="ver" id="ver"></p>
 </div></div>
 
 <div class="busy" id="busy"><span id="busyText">Saving …</span><div class="bar"><i id="busyBar"></i></div></div>
@@ -178,6 +180,7 @@ body.empty .side,body.empty .bottom,body.empty .prog,body.empty .pill,body.empty
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
+const VERSION='1.7';
 const IOS=/iP(hone|od|ad)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const ICON={
   on:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
@@ -407,7 +410,8 @@ function seek(side,fresh){
 }
 const zone=x=>x<innerWidth*.35?'l':x>innerWidth*.65?'r':'c';
 let lastTap=0,lastZone='',tapT=0,noClick=0;
-feed.addEventListener('click',e=>{
+// taps are detected from the finger itself (pointerup) – iPhone Safari doesn't reliably send "click" on a video feed
+function onTap(e){
   if(Date.now()<noClick)return;
   const now=Date.now(),z=zone(e.clientX),v=vid();
   if(v&&z!=='c'&&streak&&streak.side===z&&now<streak.until){clearTimeout(tapT);lastTap=0;seek(z);return}   // keep tapping = further
@@ -420,7 +424,7 @@ feed.addEventListener('click',e=>{
     if(muted){muted=false;mutedHintDone=true;v.muted=false;if(v.paused){play(v);hidePause()}updUI();return}
     togglePlay();
   },260);
-});
+}
 // hold (long press) and two-finger tap
 const PT=new Map();let hold=null,holdT=0,two=null;
 function startHold(x){
@@ -437,13 +441,13 @@ function endHold(){
   noClick=Date.now()+350;
 }
 feed.addEventListener('pointerdown',e=>{
-  PT.set(e.pointerId,{x:e.clientX,y:e.clientY});clearTimeout(holdT);
-  if(PT.size===2){endHold();two={t:Date.now(),moved:false};return}
-  if(PT.size>2){two=null;return}
+  PT.set(e.pointerId,{x:e.clientX,y:e.clientY,t:Date.now(),mv:false});clearTimeout(holdT);
+  if(PT.size>1){multi=true;endHold();SW.p&&SW.p.on?swBack():0;SW.p=null;return}
+  multi=false;
   if(PT.size===1&&!SW.busy&&items[cur])SW.p={id:e.pointerId,x:e.clientX,y:e.clientY,on:false,dx:0};
   const x=e.clientX;holdT=setTimeout(()=>startHold(x),400)});
 feed.addEventListener('pointermove',e=>{const p=PT.get(e.pointerId);if(!p)return;
-  if(Math.hypot(e.clientX-p.x,e.clientY-p.y)>14){clearTimeout(holdT);if(two)two.moved=true}
+  if(Math.hypot(e.clientX-p.x,e.clientY-p.y)>14){clearTimeout(holdT);p.mv=true}
   const q=SW.p;if(!q||q.id!==e.pointerId||hold||PT.size>1)return;
   const dx=e.clientX-q.x,dy=e.clientY-q.y;
   if(!q.on){if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)*1.2)swDragStart();else return}
@@ -454,13 +458,21 @@ const SW_GO=.5;
 function swFlick(q,e){const h=q.h||[],W=innerWidth;if(Math.abs(q.dx)<W*SW_GO)return false;
   if(h.length>1){const f=h[0],l=h[h.length-1];if(performance.now()-l.t<90&&Math.sign(l.x-f.x)===-Math.sign(q.dx)&&Math.abs(l.x-f.x)>8)return false}   // pulling back
   return true}
-const ptUp=e=>{if(!PT.has(e.pointerId))return;PT.delete(e.pointerId);clearTimeout(holdT);
+const ptUp=e=>{const P=PT.get(e.pointerId);if(!P)return;PT.delete(e.pointerId);clearTimeout(holdT);
+  const isTap=e.type==='pointerup'&&!multi&&!PT.size&&!hold&&!P.mv&&!(SW.p&&SW.p.on)&&Date.now()-P.t<400;
   if(SW.p&&SW.p.id===e.pointerId){const q=SW.p;SW.p=null;if(q.on){noClick=Date.now()+400;clearTimeout(tapT);lastTap=0;
     if(e.type!=='pointercancel'&&swFlick(q,e))swCommit(q.dx>0);else swBack()}}
   if(hold&&e.type==='pointercancel')endHold();
   if(PT.size)return;
   if(hold)endHold();
-  if(two){const ok=!two.moved&&Date.now()-two.t<500;two=null;noClick=Date.now()+400;clearTimeout(tapT);lastTap=0;if(ok)toggleClean()}};
+  if(isTap)onTap(e)};
+// two-finger tap = hide / show buttons (touch events: works on Android and iPhone)
+let multi=false;
+feed.addEventListener('touchstart',e=>{if(e.touches.length===2){two={t:Date.now(),x:[...e.touches].map(t=>[t.clientX,t.clientY]),moved:false};clearTimeout(tapT);lastTap=0}else if(e.touches.length>2)two=null},{passive:true});
+feed.addEventListener('touchmove',e=>{if(!two)return;for(let k=0;k<e.touches.length&&k<2;k++){const t=e.touches[k],o=two.x[k];if(o&&Math.hypot(t.clientX-o[0],t.clientY-o[1])>20)two.moved=true}},{passive:true});
+feed.addEventListener('touchend',e=>{if(!two||e.touches.length)return;const ok=!two.moved&&Date.now()-two.t<500;two=null;noClick=Date.now()+400;clearTimeout(tapT);lastTap=0;if(ok)toggleClean()},{passive:true});
+feed.addEventListener('touchcancel',e=>{if(two&&!e.touches.length){const ok=!two.moved&&Date.now()-two.t<500;two=null;if(ok)toggleClean()}},{passive:true});
+document.addEventListener('gesturestart',e=>e.preventDefault());   // iPhone: no page zoom with two fingers
 feed.addEventListener('pointerup',ptUp);feed.addEventListener('pointercancel',ptUp);
 feed.addEventListener('contextmenu',e=>e.preventDefault());
 // ---- swipe right = like & next, left = next. The next video already lies underneath.
@@ -576,6 +588,7 @@ async function addFiles(files,store){
 function openPanel(){try{history.pushState({p:1},'')}catch(e){}$('panel').classList.add('show');NATIVE?showFolders():showStore();const v=vid();if(v)v.pause()}
 function closePanel(){if(!$('panel').classList.contains('show'))return;$('panel').classList.remove('show');const v=vid();if(v&&!$('pause').classList.contains('show'))play(v)}
 addEventListener('popstate',closePanel);
+$('ver').textContent='Nightshift '+VERSION+(NATIVE?' · Android':'');
 $('menuBtn').onclick=openPanel;$('pClose').onclick=()=>history.back();$('panel').querySelector('.bg').onclick=()=>history.back();
 async function showStore(){
   const st=all.filter(x=>x.stored),tm=all.length-st.length,sz=st.reduce((a,x)=>a+x.size,0);
