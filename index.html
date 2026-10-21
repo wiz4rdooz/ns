@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de"><head>
+<html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>Nightshift</title>
@@ -17,14 +17,14 @@
 html,body{height:100%;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden;overscroll-behavior:none}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 /* Feed */
-#feed{position:fixed;inset:0;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#feed{position:fixed;inset:0;touch-action:pan-y;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 #feed::-webkit-scrollbar{display:none}
 .slide{height:100dvh;height:var(--vh,100dvh);scroll-snap-align:start;scroll-snap-stop:always;position:relative;display:flex;align-items:center;justify-content:center;background:#000;overflow:hidden}
-.slide video,.slide img{max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain;display:block}
+.slide video,.slide img{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain;display:block}
 .slide .bgblur{position:absolute;inset:-40px;background-size:cover;background-position:center;filter:blur(40px) brightness(.35);opacity:.9}
 .slide .bgblur+*{position:relative}
-.slide.new::after{content:"● Neu";position:absolute;top:calc(env(safe-area-inset-top) + 68px);left:16px;font-size:14px;font-weight:800;color:var(--accent);background:rgba(0,0,0,.45);padding:4px 9px;border-radius:999px}
-/* Oberleiste */
+.slide.new::after{content:"● New";position:absolute;top:calc(env(safe-area-inset-top) + 68px);left:16px;font-size:14px;font-weight:800;color:var(--accent);background:rgba(0,0,0,.45);padding:4px 9px;border-radius:999px}
+/* Top bar */
 .top{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;gap:6px;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;background:linear-gradient(rgba(0,0,0,.55),transparent);pointer-events:none}
 .top>*{pointer-events:auto}
 .tabs{display:flex;gap:20px;margin:0 auto;font-weight:800;font-size:19px}
@@ -33,12 +33,12 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .tabs small{font-size:13px;opacity:.6;margin-left:3px;font-weight:600}
 .ib{width:50px;height:50px;border-radius:50%;display:grid;place-items:center}
 .ib svg{width:31px;height:31px}.ib.on{color:var(--accent)}
-/* Rechte Leiste */
+/* Right rail */
 .side{position:fixed;right:8px;bottom:calc(env(safe-area-inset-bottom) + 100px);z-index:10;display:flex;flex-direction:column;gap:20px;align-items:center}
 .side button{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:13px;font-weight:600;text-shadow:0 1px 3px #000}
 .side .c{width:62px;height:62px;border-radius:50%;background:rgba(0,0,0,.35);display:grid;place-items:center;backdrop-filter:blur(6px)}
 .side svg{width:35px;height:35px}.side .liked .c{color:var(--accent)}
-/* Unten */
+/* Bottom */
 .bottom{position:fixed;left:0;right:0;bottom:0;z-index:9;padding:0 88px calc(env(safe-area-inset-bottom) + 16px) 14px;background:linear-gradient(transparent,rgba(0,0,0,.6));pointer-events:none}
 .bottom b{display:block;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px #000}
 .bottom span{font-size:13.5px;color:var(--muted)}
@@ -50,11 +50,34 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .prog.drag~.time{display:block}
 .pill{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 72px);transform:translateX(-50%);z-index:12;background:rgba(0,0,0,.6);padding:10px 16px;border-radius:999px;font-size:15px;font-weight:700;display:none}
 .pill.show{display:block}
-.pause{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;width:104px;height:104px;border-radius:50%;background:rgba(0,0,0,.4);display:none;place-items:center;pointer-events:none}
-.pause.show{display:grid}.pause svg{width:50px;height:50px;margin-left:7px}
+.pause{position:fixed;left:50%;top:50%;z-index:8;width:84px;height:84px;margin:-42px 0 0 -42px;border-radius:50%;background:rgba(0,0,0,.38);display:none;place-items:center;pointer-events:none;backdrop-filter:blur(4px)}
+.pause.show{display:grid;animation:ipop .22s ease-out}.pause svg{width:40px;height:40px;margin-left:5px}
+.pause.flash{display:grid;animation:ifade .5s ease-out forwards}.pause.flash svg{margin-left:0}
+@keyframes ipop{from{transform:scale(1.35);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes ifade{0%{transform:scale(1);opacity:1}100%{transform:scale(1.35);opacity:0}}
+/* double-tap left/right = rewind / skip ahead (like X/Twitter) */
+.seek{position:fixed;top:0;bottom:0;width:36%;z-index:8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-weight:800;font-size:15px;text-shadow:0 1px 4px #000;pointer-events:none;opacity:0;transition:opacity .3s;background:rgba(255,255,255,.13)}
+.seek.l{left:0;border-radius:0 50% 50% 0}.seek.r{right:0;border-radius:50% 0 0 50%}
+.seek.show{opacity:1;transition:opacity .08s}.seek svg{width:34px;height:34px}
+.speed{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 76px);transform:translateX(-50%);z-index:12;background:rgba(0,0,0,.55);padding:8px 15px;border-radius:999px;font-size:15px;font-weight:800;display:none;pointer-events:none}
+.speed.show{display:block}
+/* clean view: all buttons hidden (tap with two fingers / H key) */
+.top,.side,.bottom,.pill{transition:opacity .2s}
+body.clean:not(.empty) .top,body.clean:not(.empty) .side,body.clean:not(.empty) .bottom,body.clean:not(.empty) .pill{opacity:0;pointer-events:none!important}
+body.clean:not(.empty) .top>*,body.clean:not(.empty) .side>*{pointer-events:none}
+body.clean .slide.new::after{display:none}
+/* in clean view only the timeline + a small mute button stay */
+.cmute{position:fixed;left:10px;bottom:calc(env(safe-area-inset-bottom) + 34px);z-index:11;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.4);backdrop-filter:blur(6px);display:none;place-items:center}
+.cmute svg{width:24px;height:24px}
+body.clean:not(.empty) .cmute.vid{display:grid}
+/* swipe right = like, left = next (Tinder) */
+.slide.drag{z-index:2;box-shadow:0 0 40px rgba(0,0,0,.6)}
+.slide.under{z-index:0}
+.swst{position:fixed;top:calc(env(safe-area-inset-top) + 110px);z-index:13;font-size:30px;font-weight:900;letter-spacing:2px;padding:4px 14px;border:4px solid;border-radius:12px;opacity:0;pointer-events:none}
+.swst.like{left:22px;color:#4ade80;transform:rotate(-14deg)}.swst.nope{right:22px;color:#ff4d6d;transform:rotate(14deg)}
 .heart{position:fixed;z-index:13;pointer-events:none;width:130px;height:130px;margin:-65px 0 0 -65px;color:var(--accent);animation:pop .8s ease forwards}
 @keyframes pop{0%{transform:scale(.3);opacity:0}25%{transform:scale(1.15);opacity:1}60%{transform:scale(1)}100%{transform:scale(1.4) translateY(-40px);opacity:0}}
-/* Leer / Start */
+/* Empty / start */
 .start{position:fixed;inset:0;z-index:5;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:30px 24px;text-align:center}
 .start.show{display:flex}
 .start img{width:84px;height:84px;border-radius:20px}
@@ -62,7 +85,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .big{width:min(360px,100%);padding:16px;border-radius:14px;font-weight:700;font-size:16px;background:var(--accent);color:#fff;display:flex;flex-direction:column;gap:3px;align-items:center}
 .big small{font-weight:500;font-size:12px;opacity:.85}
 .big.alt{background:#23262d}
-/* Menü */
+/* Menu */
 .panel{position:fixed;inset:0;z-index:30;display:none}
 .panel.show{display:block}
 .panel .bg{position:absolute;inset:0;background:rgba(0,0,0,.55)}
@@ -80,50 +103,73 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .busy{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.75);display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-weight:700}
 .busy.show{display:flex}.busy .bar{width:min(280px,70vw);height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}.busy .bar i{display:block;height:100%;background:var(--accent);width:0}
 input[type=file]{display:none}
+body.native [data-add],body.native .webOnly{display:none!important}
+body:not(.native) .nativeOnly{display:none!important}
+.flist{display:flex;flex-direction:column;gap:4px;max-height:42dvh;overflow:auto}
+.flist label{display:flex;align-items:center;gap:12px;padding:10px 6px;border-radius:10px;font-size:15px}
+.flist label:active{background:rgba(255,255,255,.06)}
+.flist input{width:22px;height:22px;accent-color:var(--accent);flex:none}
+.flist .t{flex:1;min-width:0}.flist b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.flist small{color:var(--muted);font-size:12px}
+.flist .all{border-bottom:1px solid var(--line);border-radius:0;margin-bottom:4px}
+.own{display:flex;align-items:center;gap:12px;padding:10px 6px;font-size:15px}.own .t{flex:1;min-width:0}.own b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.own small{color:var(--muted);font-size:12px}.own button{font-size:24px;color:var(--muted);padding:0 10px}
+.ownadd{width:100%;margin:6px 0 10px}
 body.empty .side,body.empty .bottom,body.empty .prog,body.empty .pill,body.empty #autoBtn,body.empty #shufBtn{display:none!important}
 </style></head>
 <body>
 <div id="feed"></div>
 
 <div class="top">
-  <button class="ib" id="menuBtn" aria-label="Menü"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-  <div class="tabs"><button class="on" data-v="all">Alle<small id="cAll"></small></button><button data-v="likes">Likes<small id="cLikes"></small></button></div>
+  <button class="ib" id="menuBtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <div class="tabs"><button class="on" data-v="all">All<small id="cAll"></small></button><button data-v="likes">Likes<small id="cLikes"></small></button></div>
   <button class="ib" id="autoBtn" aria-label="Autoplay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z" fill="currentColor"/></svg></button>
-  <button class="ib" id="shufBtn" aria-label="Zufällig"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button>
+  <button class="ib" id="shufBtn" aria-label="Shuffle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button>
 </div>
 
 <div class="side" id="side">
   <button id="likeBtn"><span class="c"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.8 4.5c2.1 0 3.6 1.1 4.4 2.5.8-1.4 2.3-2.5 4.4-2.5 3.8 0 5.9 3.9 4.4 7.3C19.5 16.4 12 21 12 21z"/></svg></span>Like</button>
-  <button id="muteBtn"><span class="c" id="muteIc"></span><span id="muteLbl">Ton</span></button>
-  <button id="hideBtn"><span class="c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></span>Entfernen</button>
+  <button id="muteBtn"><span class="c" id="muteIc"></span><span id="muteLbl">Sound</span></button>
+  <button id="hideBtn"><span class="c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></span>Remove</button>
 </div>
 <div class="bottom"><b id="name"></b><span id="meta"></span></div>
 <div class="prog hidden" id="prog"><i><b id="progFill"></b></i></div>
 <div class="time" id="time"></div>
-<div class="pill" id="pill">🔇 Tippen für Ton</div>
-<div class="pause" id="pause"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg></div>
+<div class="pill" id="pill">🔇 Tap for sound</div>
+<div class="pause" id="pause"></div>
+<div class="seek l" id="seekL"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 6v12L3 12zM20 6v12l-8-6z"/></svg><span></span></div>
+<div class="seek r" id="seekR"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 6v12l8-6zM4 6v12l8-6z"/></svg><span></span></div>
+<div class="speed" id="speed"></div>
+<button class="cmute" id="cMute" aria-label="Sound"></button>
+<div class="swst like" id="stLike">LIKE ♥</div><div class="swst nope" id="stNope">NEXT ›</div>
 
 <div class="start" id="start">
   <img src="icon-192.png" alt="">
   <h1>Nightshift</h1>
-  <p>Deine Videos & Bilder vom Handy als Feed – ganz ohne PC. Nichts wird hochgeladen, alles bleibt auf deinem Handy.</p>
-  <button class="big" data-add="save">Videos & Bilder wählen<small>In Nightshift speichern – sind beim nächsten Öffnen wieder da</small></button>
-  <button class="big alt" data-add="temp">Nur jetzt ansehen<small>Braucht keinen Extra-Speicher</small></button>
-  <button class="big alt folderOnly" data-add="folder">Ganzen Ordner wählen<small>Android – falls dein Handy es kann</small></button>
+  <p id="startText">Your phone’s videos & pics as a feed – no PC needed. Nothing gets uploaded, everything stays on your phone.</p>
+  <button class="big" data-add="save">Choose videos & pics<small>Save in Nightshift – still here next time you open it</small></button>
+  <button class="big alt" data-add="temp">Just watch now<small>Uses no extra storage</small></button>
+  <button class="big alt folderOnly" data-add="folder">Choose a whole folder<small>Android – if your phone supports it</small></button>
+  <button class="big nativeOnly" id="permBtn">Allow photos & videos<small>Nightshift reads them right from your phone – nothing gets uploaded</small></button>
+  <button class="big alt nativeOnly" id="pickOwn">Pick a folder yourself<small>Any folder – even hidden ones and SD card</small></button>
+  <button class="big alt nativeOnly" id="pickFolders" style="display:none">Choose folders<small>Which folders should be in Nightshift?</small></button>
 </div>
 
 <div class="panel" id="panel"><div class="bg"></div><div class="box">
-  <h2>Nightshift<button id="pClose" aria-label="Schließen">×</button></h2>
-  <div class="row"><button class="btn p" data-add="save">+ Speichern</button><button class="btn" data-add="temp">+ Nur ansehen</button></div>
-  <button class="btn folderOnly" data-add="folder">+ Ganzen Ordner wählen</button>
+  <h2>Nightshift<button id="pClose" aria-label="Close">×</button></h2>
+  <div class="row"><button class="btn p" data-add="save">+ Save</button><button class="btn" data-add="temp">+ Just watch</button></div>
+  <button class="btn folderOnly" data-add="folder">+ Choose whole folder</button>
   <div class="store" id="store"></div>
-  <label class="sw"><input type="checkbox" id="newFirst" checked> Ungesehenes zuerst</label>
-  <div class="row"><button class="btn" id="seenReset">Gesehen zurücksetzen</button><button class="btn bad" id="wipe">Alles entfernen</button></div>
-  <p class="hint"><b>Entfernen</b> nimmt Dateien nur aus Nightshift heraus – auf deinem Handy bleiben sie. Gespeicherte Dateien belegen zusätzlichen Platz (es ist eine Kopie).</p>
-  <p class="hint" id="installHint"></p>
+  <button class="btn nativeOnly" id="rescan">↻ Rescan</button>
+  <label class="sw"><input type="checkbox" id="newFirst" checked> Unwatched first</label>
+  <div class="row"><button class="btn" id="seenReset">Reset watched</button><button class="btn bad webOnly" id="wipe">Remove all</button></div>
+  <p class="hint webOnly"><b>Remove</b> only takes files out of Nightshift – they stay on your phone. Saved files take up extra space (they’re a copy).</p>
+  <p class="hint nativeOnly"><b>Delete</b> moves gallery files to your phone’s trash (Android 11+: recoverable for 30 days). Android asks you to confirm each time. In <b>your own folders</b> files are deleted permanently – there’s no trash there.</p>
+  <p class="hint"><b>Gestures:</b> tap = pause / play · double-tap left / right = 5 s back / ahead · double-tap middle = like · swipe right = like & next, swipe left = next · hold = 2× speed (hold on the left = rewind) · <b>tap with two fingers = hide / show the buttons</b> (timeline and mute stay)</p>
+  <p class="hint webOnly" id="installHint"></p>
 </div></div>
 
-<div class="busy" id="busy"><span id="busyText">Speichere …</span><div class="bar"><i id="busyBar"></i></div></div>
+<div class="busy" id="busy"><span id="busyText">Saving …</span><div class="bar"><i id="busyBar"></i></div></div>
 <div class="toast" id="toast"></div>
 <input type="file" id="fileSave" accept="video/*,image/*" multiple>
 <input type="file" id="fileTemp" accept="video/*,image/*" multiple>
@@ -136,6 +182,8 @@ const IOS=/iP(hone|od|ad)/.test(navigator.userAgent)||(navigator.platform==='Mac
 const ICON={
   on:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
   off:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>',
+  pauseI:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>',
   heart:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.8 4.5c2.1 0 3.6 1.1 4.4 2.5.8-1.4 2.3-2.5 4.4-2.5 3.8 0 5.9 3.9 4.4 7.3C19.5 16.4 12 21 12 21z"/></svg>'
 };
 const VIDEO_EXT=/\.(mp4|m4v|mov|webm|mkv|3gp|avi)$/i, IMG_EXT=/\.(jpe?g|png|gif|webp|heic|heif|avif|bmp)$/i;
@@ -144,7 +192,7 @@ const keyOf=f=>f.name+'|'+f.size+'|'+(f.lastModified||0);
 const fmt=b=>{const u=['B','KB','MB','GB'];let i=0;while(b>=1024&&i<3){b/=1024;i++}return (i?b.toFixed(b<10?1:0):b)+' '+u[i]};
 function toast(m,err){const t=$('toast');t.textContent=m;t.classList.toggle('err',!!err);t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),err?4500:2200)}
 
-// ---------- Speicher (IndexedDB): Dateien + Likes/Gesehen ----------
+// ---------- Storage (IndexedDB): files + likes/watched ----------
 let db;
 function openDB(){return new Promise((ok,no)=>{const r=indexedDB.open('nightshift-mobil',1);
   r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore('items',{keyPath:'id'});d.createObjectStore('blobs');d.createObjectStore('marks');d.createObjectStore('prefs')};
@@ -157,10 +205,78 @@ const dbDel=(s,k)=>tx(s,'readwrite',st=>st.delete(k));
 async function allMarks(){const out=new Map();if(!db)return out;await new Promise((ok,no)=>{const t=db.transaction('marks'),c=t.objectStore('marks').openCursor();c.onsuccess=()=>{const cur=c.result;if(cur){out.set(cur.key,cur.value);cur.continue()}else ok()};c.onerror=()=>no(c.error)});return out}
 function saveMark(it){if(db)dbPut('marks',{liked:!!it.liked,seenAt:it.seenAt||0},it.key).catch(()=>{})}
 
-// ---------- Zustand ----------
+// ---------- Android app: reads straight from the phone, really deletes ----------
+const NATIVE=!!window.Android;
+const TOKEN=new URLSearchParams(location.search).get('t')||'';
+const getFolders=()=>{try{return JSON.parse(localStorage.getItem('nsFolders')||'[]')}catch(e){return []}};
+const setFolders=a=>{try{localStorage.setItem('nsFolders',JSON.stringify(a))}catch(e){}};
+async function loadNative(){
+  const b=Android.hasPermission()?getFolders().join(','):'-';       // without gallery access only self-picked folders
+  const r=await fetch('/api/list?t='+TOKEN+'&b='+encodeURIComponent(b));
+  let arr=await r.json();const marks=await allMarks();
+  const seen=new Set(),dup=[];                                     // duplicate (gallery + own folder)? keep the gallery version
+  arr.sort((a,b)=>(a.own?1:0)-(b.own?1:0));
+  arr=arr.filter(x=>{const k=x.name+'|'+x.size;if(seen.has(k))return false;seen.add(k);return true});
+  all=arr.map(x=>Object.assign({id:x.nid,nid:x.nid,key:'a:'+x.nid,name:x.name,kind:x.kind,size:x.size,mtime:x.mtime,bucket:x.bucket,own:!!x.own,
+    native:true,url:'/media/'+x.nid.replace(':','/')+'?t='+TOKEN},marks.get('a:'+x.nid)||{}));
+}
+let ownTrees=[];
+async function loadTrees(){try{ownTrees=await (await fetch('/api/trees?t='+TOKEN)).json()}catch(e){ownTrees=[]}}
+window.nsFolderResult=async ok=>{if(!ok)return;toast('Folder added – scanning …');await loadTrees();await loadNative();build();counts();
+  if($('panel').classList.contains('show'))showFolders();$('permBtn').style.display='none';$('pickOwn').style.display='none';toast(all.length+' files in Nightshift')};
+async function nativeStart(){
+  await loadTrees();
+  if(!Android.hasPermission()&&!ownTrees.length){
+    $('startText').textContent='Nightshift shows your videos & pics right from your phone as a feed. The app just needs access once – nothing gets uploaded.';
+    $('permBtn').style.display='';$('pickFolders').style.display='none';all=[];build();return}
+  $('permBtn').style.display=Android.hasPermission()?'none':'';$('pickOwn').style.display='none';
+  try{await loadNative()}catch(e){toast('Couldn’t read files: '+e.message,true)}
+  $('startText').textContent=getFolders().length?'No videos or pics in the selected folders.':'No videos or pics found on your phone.';
+  $('pickFolders').style.display=getFolders().length?'':'none';
+  build();
+  if(Android.partialAccess&&Android.partialAccess())toast('You only allowed selected photos – you can allow all in Settings');
+}
+window.nsPermResult=(ok,blocked)=>{if(ok){nativeStart();return}
+  if(blocked){toast('Access denied – tap again to allow it in Settings',true);$('permBtn').onclick=()=>Android.openSettings()}
+  else toast('Without access, Nightshift can’t show your videos',true)};
+let trashItem=null;
+window.nsTrashResult=(ok,toBin,err)=>{const it=trashItem;trashItem=null;if(!it)return;
+  if(ok)dropItem(it,toBin?'Moved to trash – recoverable for 30 days':'Permanently deleted from your phone');
+  else toast(err?'Couldn’t delete: '+err:'Not deleted',!!err)};
+window.nsBack=()=>{if($('panel').classList.contains('show')){history.back();return true}return false};
+window.nsPause=()=>{const v=vid();if(v)v.pause()};
+window.nsResume=()=>{const v=vid();if(v&&!$('pause').classList.contains('show'))play(v);if(NATIVE&&Android.hasPermission()&&!all.length)nativeStart()};
+async function showFolders(){
+  await loadTrees();
+  let fs=[];if(Android.hasPermission())try{fs=await (await fetch('/api/folders?t='+TOKEN)).json()}catch(e){}
+  fs.sort((a,b)=>(b.videos+b.images)-(a.videos+a.images));
+  const sel=new Set(getFolders()),allOn=!sel.size;
+  const esc=t=>String(t).replace(/</g,'&lt;');
+  const own=`<b>Your folders</b><div>${ownTrees.map(t=>`<div class="own"><span style="font-size:20px">📁</span><div class="t"><b>${esc(t.name)}</b><small>picked by you · with subfolders</small></div><button data-rmtree="${esc(t.uri)}" title="Remove from Nightshift (folder stays)">×</button></div>`).join('')||'<div class="hint" style="padding:6px 0">None yet – e.g. pick a hidden folder or one on your SD card.</div>'}</div>
+    <button class="btn ownadd" id="addOwn">+ Pick a folder from your phone</button>`;
+  if(!Android.hasPermission()){$('store').innerHTML=own+`<button class="btn" id="galPerm">Allow gallery folders</button>`;
+    $('galPerm').onclick=()=>Android.requestPermission();bindOwn();return}
+  $('store').innerHTML=own+`<b>Gallery folders</b><div class="flist"><label class="all"><input type="checkbox" data-fall ${allOn?'checked':''}><div class="t"><b>All folders</b><small>${fs.length} folders on your phone</small></div></label>`+
+    fs.map(f=>`<label><input type="checkbox" data-f="${f.id}" ${allOn||sel.has(f.id)?'checked':''}><div class="t"><b>${f.name.replace(/</g,'&lt;')}</b><small>${[f.videos?f.videos+' videos':'',f.images?f.images+' pics':''].filter(Boolean).join(' · ')} · ${fmt(f.size)}${f.path?' · '+f.path.replace(/</g,'&lt;'):''}</small></div></label>`).join('')+'</div>';
+  bindOwn();
+  const boxes=[...$('store').querySelectorAll('[data-f]')],allBox=$('store').querySelector('[data-fall]');
+  const apply=async()=>{const on=boxes.filter(b=>b.checked).map(b=>b.dataset.f);
+    setFolders(on.length===boxes.length?[]:on.length?on:['-']);allBox.checked=on.length===boxes.length;
+    await loadNative();build();counts()};
+  allBox.onchange=()=>{boxes.forEach(b=>b.checked=allBox.checked);apply()};
+  boxes.forEach(b=>b.onchange=apply);
+}
+
+function bindOwn(){
+  $('addOwn').onclick=()=>Android.pickFolder();
+  $('store').querySelectorAll('[data-rmtree]').forEach(b=>b.onclick=async()=>{Android.removeFolder(b.dataset.rmtree);toast('Folder removed from Nightshift – it stays on your phone');
+    await loadTrees();await loadNative();build();counts();showFolders()});
+}
+
+// ---------- State ----------
 let all=[],items=[],cur=-1,view='all',shuffled=false,autoplay=false,muted=true,newFirst=true,H=innerHeight;
-const urls=new Map();          // id -> objectURL (nur für die Nähe)
-let temp=new Map();            // id -> File (nur-ansehen)
+const urls=new Map();          // id -> objectURL (only for nearby slides)
+let temp=new Map();            // id -> File (view only)
 async function pref(k,d){try{const v=await dbGet('prefs',k);return v===undefined?d:v}catch(e){return d}}
 const setPref=(k,v)=>dbPut('prefs',v,k).catch(()=>{});
 
@@ -187,7 +303,7 @@ function render(keepId){
   feed.innerHTML='';counts();
   $('start').classList.toggle('show',!items.length&&view==='all');
   document.body.classList.toggle('empty',!items.length);
-  if(!items.length){cur=-1;$('name').textContent=view==='likes'?'Noch keine Likes – Doppeltipp auf ein Video':'';$('meta').textContent='';$('prog').classList.add('hidden');return}
+  if(!items.length){cur=-1;$('name').textContent=view==='likes'?'No likes yet – double-tap a video':'';$('meta').textContent='';$('prog').classList.add('hidden');return}
   const frag=document.createDocumentFragment();
   items.forEach((it,i)=>{const s=document.createElement('div');s.className='slide';s.dataset.i=i;it.el=s;frag.appendChild(s)});
   feed.appendChild(frag);
@@ -195,6 +311,7 @@ function render(keepId){
   cur=-1;feed.scrollTop=i*H;setCurrent(i);
 }
 async function urlFor(it){
+  if(it.native)return it.url;
   if(urls.has(it.id))return urls.get(it.id);
   let blob=it.stored?await dbGet('blobs',it.id):temp.get(it.id);
   if(!blob)return null;
@@ -218,7 +335,7 @@ async function mount(it,active){
   }else{
     const bg=document.createElement('div');bg.className='bgblur';bg.style.backgroundImage=`url("${u}")`;
     const im=document.createElement('img');im.src=u;im.alt='';im.decoding='async';
-    im.onerror=()=>{if(/heic|heif/i.test(it.name))it.el.innerHTML='<p style="color:#aaa;padding:30px;text-align:center">HEIC-Bilder kann dieser Browser nicht anzeigen.</p>'};
+    im.onerror=()=>{if(/heic|heif/i.test(it.name))it.el.innerHTML='<p style="color:#aaa;padding:30px;text-align:center">This browser can’t show HEIC images.</p>'};
     it.el.append(bg,im);
   }
 }
@@ -238,9 +355,9 @@ function setCurrent(i){
 function updUI(){
   const it=items[cur];if(!it)return;
   $('name').textContent=it.name;
-  $('meta').textContent=fmt(it.size)+(it.stored?'':' · nur angesehen')+(it.mtime?' · '+new Date(it.mtime).toLocaleDateString('de-DE'):'');
+  $('meta').textContent=fmt(it.size)+(it.native?(it.bucket?' · '+it.bucket:''):it.stored?'':' · view only')+(it.mtime?' · '+new Date(it.mtime).toLocaleDateString('en-US'):'');
   $('likeBtn').classList.toggle('liked',!!it.liked);
-  $('muteIc').innerHTML=muted?ICON.off:ICON.on;$('muteLbl').textContent=muted?'Stumm':'Ton';
+  $('muteIc').innerHTML=muted?ICON.off:ICON.on;$('cMute').innerHTML=muted?ICON.off:ICON.on;$('cMute').classList.toggle('vid',it.kind==='video');$('muteLbl').textContent=muted?'Muted':'Sound';
   $('pill').classList.toggle('show',muted&&it.kind==='video'&&!mutedHintDone);
   $('prog').classList.toggle('hidden',it.kind!=='video'&&!autoplay);
   $('autoBtn').classList.toggle('on',autoplay);$('shufBtn').classList.toggle('on',shuffled);
@@ -255,25 +372,106 @@ function updProg(){
   $('progFill').style.width=(p*100).toFixed(2)+'%';
 }
 setInterval(()=>{if(items[cur]&&items[cur].kind==='image'&&autoplay)updProg()},200);
-function go(d){const n=cur+d;if(n>=items.length){if(items.length){feed.scrollTo({top:0,behavior:'instant'});setCurrent(0);toast('Alles durch – wieder von vorn')}return}if(n<0)return;feed.scrollTo({top:n*H,behavior:'smooth'})}
+function go(d){const n=cur+d;if(n>=items.length){if(items.length){feed.scrollTo({top:0,behavior:'instant'});setCurrent(0);toast('You’re all caught up – starting over')}return}if(n<0)return;feed.scrollTo({top:n*H,behavior:'smooth'})}
 let raf=0;
 feed.addEventListener('scroll',()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;const i=Math.round(feed.scrollTop/H);if(Math.abs(feed.scrollTop-i*H)<H*.35)setCurrent(Math.max(0,Math.min(items.length-1,i)))})},{passive:true});
 addEventListener('resize',()=>{H=innerHeight;document.documentElement.style.setProperty('--vh',H+'px');if(cur>=0)feed.scrollTop=cur*H});
 document.documentElement.style.setProperty('--vh',H+'px');
 
-// Tippen = Pause/Ton an, Doppeltipp = Like
-let lastTap=0,tapT=0;
+// ---------- Gestures ----------
+// tap = pause / play (Instagram) · double-tap left/right = 5 s back/ahead, keep tapping for more (X/Twitter) · double-tap middle = like
+// hold = 2× speed, hold on the left = rewind · tap with two fingers = hide / show all buttons
+const SEEK=5;
+function showPause(){const p=$('pause');p.classList.remove('flash');p.innerHTML=ICON.play;p.classList.add('show')}
+function hidePause(flash){const p=$('pause');p.classList.remove('show','flash');if(flash){p.innerHTML=ICON.pauseI;void p.offsetWidth;p.classList.add('flash');clearTimeout(hidePause.t);hidePause.t=setTimeout(()=>p.classList.remove('flash'),520)}}
+function togglePlay(){const v=vid();if(!v)return;if(v.paused){play(v);hidePause(true)}else{v.pause();showPause()}}
+let streak=null;
+function seek(side,fresh){
+  const v=vid();if(!v||!v.duration)return;
+  if(fresh||!streak||streak.side!==side)streak={side,sum:0};
+  streak.sum+=SEEK;streak.until=Date.now()+650;
+  v.currentTime=Math.max(0,Math.min(v.duration-.1,v.currentTime+(side==='l'?-SEEK:SEEK)));updProg();
+  const el=$(side==='l'?'seekL':'seekR'),o=$(side==='l'?'seekR':'seekL');o.classList.remove('show');
+  el.querySelector('span').textContent=streak.sum+' s';el.classList.add('show');
+  clearTimeout(seek.t);seek.t=setTimeout(()=>{el.classList.remove('show');streak=null},650);
+  if(navigator.vibrate)try{navigator.vibrate(8)}catch(e){}
+}
+const zone=x=>x<innerWidth*.35?'l':x>innerWidth*.65?'r':'c';
+let lastTap=0,lastZone='',tapT=0,noClick=0;
 feed.addEventListener('click',e=>{
-  const now=Date.now();
-  if(now-lastTap<300){clearTimeout(tapT);lastTap=0;like(true,e.clientX,e.clientY);return}
-  lastTap=now;
+  if(Date.now()<noClick)return;
+  const now=Date.now(),z=zone(e.clientX),v=vid();
+  if(v&&z!=='c'&&streak&&streak.side===z&&now<streak.until){clearTimeout(tapT);lastTap=0;seek(z);return}   // keep tapping = further
+  if(now-lastTap<300){clearTimeout(tapT);lastTap=0;
+    if(v&&z!=='c'&&lastZone===z){seek(z,true);return}
+    like(true,e.clientX,e.clientY);return}
+  lastTap=now;lastZone=z;
   tapT=setTimeout(()=>{
-    const v=vid();
-    if(muted&&v){muted=false;mutedHintDone=true;v.muted=false;if(v.paused)play(v);updUI();return}
-    if(!v)return;
-    if(v.paused){play(v);$('pause').classList.remove('show')}else{v.pause();$('pause').classList.add('show')}
+    const v=vid();if(!v)return;
+    if(muted){muted=false;mutedHintDone=true;v.muted=false;if(v.paused){play(v);hidePause()}updUI();return}
+    togglePlay();
   },260);
 });
+// hold (long press) and two-finger tap
+const PT=new Map();let hold=null,holdT=0,two=null;
+function startHold(x){
+  const v=vid();if(!v||!v.duration||PT.size!==1)return;
+  const side=zone(x)==='l'?'l':'r';hold={side,v,was:v.paused,rate:v.playbackRate};
+  if(side==='r'){v.playbackRate=2;if(v.paused){play(v);hidePause()}$('speed').textContent='2× ▸▸'}
+  else{v.pause();hold.iv=setInterval(()=>{v.currentTime=Math.max(0,v.currentTime-.2);updProg()},100);$('speed').textContent='◂◂ 2×'}
+  $('speed').classList.add('show');if(navigator.vibrate)try{navigator.vibrate(10)}catch(e){}
+}
+function endHold(){
+  if(!hold)return;const h=hold;hold=null;$('speed').classList.remove('show');
+  if(h.side==='r'){h.v.playbackRate=h.rate||1;if(h.was){h.v.pause();showPause()}}
+  else{clearInterval(h.iv);if(!h.was)play(h.v)}
+  noClick=Date.now()+350;
+}
+feed.addEventListener('pointerdown',e=>{
+  PT.set(e.pointerId,{x:e.clientX,y:e.clientY});clearTimeout(holdT);
+  if(PT.size===2){endHold();two={t:Date.now(),moved:false};return}
+  if(PT.size>2){two=null;return}
+  if(PT.size===1&&!SW.busy&&items[cur])SW.p={id:e.pointerId,x:e.clientX,y:e.clientY,on:false,dx:0};
+  const x=e.clientX;holdT=setTimeout(()=>startHold(x),400)});
+feed.addEventListener('pointermove',e=>{const p=PT.get(e.pointerId);if(!p)return;
+  if(Math.hypot(e.clientX-p.x,e.clientY-p.y)>14){clearTimeout(holdT);if(two)two.moved=true}
+  const q=SW.p;if(!q||q.id!==e.pointerId||hold||PT.size>1)return;
+  const dx=e.clientX-q.x,dy=e.clientY-q.y;
+  if(!q.on){if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)*1.2)swDragStart();else return}
+  q.dx=dx;swSet(dx)});
+const ptUp=e=>{if(!PT.has(e.pointerId))return;PT.delete(e.pointerId);clearTimeout(holdT);
+  if(SW.p&&SW.p.id===e.pointerId){const q=SW.p;SW.p=null;if(q.on){noClick=Date.now()+400;clearTimeout(tapT);lastTap=0;
+    if(e.type!=='pointercancel'&&Math.abs(q.dx)>Math.min(110,innerWidth*.25))swCommit(q.dx>0);else swBack()}}
+  if(hold&&e.type==='pointercancel')endHold();
+  if(PT.size)return;
+  if(hold)endHold();
+  if(two){const ok=!two.moved&&Date.now()-two.t<500;two=null;noClick=Date.now()+400;clearTimeout(tapT);lastTap=0;if(ok)toggleClean()}};
+feed.addEventListener('pointerup',ptUp);feed.addEventListener('pointercancel',ptUp);
+feed.addEventListener('contextmenu',e=>e.preventDefault());
+// ---- swipe right = like & next, left = next. The next video already lies underneath.
+const SW={p:null,busy:false,c:null,n:null};
+function swDragStart(){const it=items[cur];SW.p.on=true;clearTimeout(holdT);clearTimeout(tapT);lastTap=0;
+  SW.c=it.el;SW.c.classList.add('drag');SW.c.style.transition='none';
+  const n=items[cur+1];SW.n=n&&n.el?n.el:null;if(SW.n){mount(n);SW.n.classList.add('under');SW.n.style.transform=`translateY(-${H}px)`}}
+function swSet(dx){SW.c.style.transform=`translateX(${dx}px) rotate(${dx/22}deg)`;
+  $('stLike').style.opacity=Math.max(0,Math.min(1,dx/90));$('stNope').style.opacity=Math.max(0,Math.min(1,-dx/90))}
+function swClean(){const c=SW.c,n=SW.n;SW.c=SW.n=null;
+  if(c){c.classList.remove('drag');c.style.transition='';c.style.transform=''}
+  if(n){n.classList.remove('under');n.style.transform=''}
+  $('stLike').style.opacity=0;$('stNope').style.opacity=0}
+function swBack(){const c=SW.c;if(!c)return;SW.busy=true;c.style.transition='transform .2s ease-out';c.style.transform='';
+  $('stLike').style.opacity=0;$('stNope').style.opacity=0;setTimeout(()=>{swClean();SW.busy=false},210)}
+function swCommit(yes){const c=SW.c;if(!c)return;SW.busy=true;
+  if(yes){like(true,innerWidth/2,innerHeight/2)}
+  const v=c.querySelector('video');
+  c.style.transition='transform .22s ease-in';c.style.transform=`translateX(${yes?140:-140}%) rotate(${yes?22:-22}deg)`;
+  setTimeout(()=>{const had=!!SW.n,i=cur;if(v)v.pause();swClean();
+    if(had){feed.scrollTo({top:(i+1)*H,behavior:'instant'});setCurrent(i+1)}else go(1);
+    SW.busy=false},230)}
+let clean=false;
+function setClean(on,quiet){clean=on;document.body.classList.toggle('clean',on);setPref('clean',on);
+  if(!quiet)toast(on?'Buttons hidden – tap with two fingers to bring them back':'Buttons are back')}
+function toggleClean(){setClean(!clean);if(navigator.vibrate)try{navigator.vibrate(15)}catch(e){}}
 function like(on,x,y){
   const it=items[cur];if(!it)return;
   it.liked=on===undefined?!it.liked:on;saveMark(it);updUI();counts();
@@ -281,15 +479,16 @@ function like(on,x,y){
   if(navigator.vibrate)try{navigator.vibrate(12)}catch(e){}
 }
 $('likeBtn').onclick=()=>like();
+$('cMute').onclick=()=>$('muteBtn').click();
 $('muteBtn').onclick=()=>{muted=!muted;mutedHintDone=true;const v=vid();if(v){v.muted=muted;if(v.paused)play(v)}updUI()};
 $('hideBtn').onclick=()=>removeCur();
 $('autoBtn').onclick=()=>{autoplay=!autoplay;setPref('autoplay',autoplay);const v=vid();if(v)v.loop=!autoplay;
   clearTimeout(imgT);const it=items[cur];if(it&&it.kind==='image'&&autoplay){imgStart=Date.now();imgT=setTimeout(()=>{if(items[cur]===it)go(1)},5000)}
-  toast(autoplay?'Autoplay an – Bilder je 5 Sek.':'Autoplay aus');updUI()};
-$('shufBtn').onclick=()=>{shuffled=!shuffled;setPref('shuffled',shuffled);toast(shuffled?'Zufällige Reihenfolge':'Neueste zuerst');build(items[cur]&&items[cur].id)};
+  toast(autoplay?'Autoplay on – 5 sec per pic':'Autoplay off');updUI()};
+$('shufBtn').onclick=()=>{shuffled=!shuffled;setPref('shuffled',shuffled);toast(shuffled?'Shuffle on':'Newest first');build(items[cur]&&items[cur].id)};
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{view=b.dataset.v;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));build()});
 
-// Zeitleiste zum Spulen
+// timeline for scrubbing
 (function(){const pr=$('prog');let on=false;
   const at=e=>{const v=vid();if(!v||!v.duration)return;const x=(e.touches?e.touches[0]:e).clientX,p=Math.max(0,Math.min(1,x/innerWidth));v.currentTime=p*v.duration;$('progFill').style.width=p*100+'%';
     const t=p*v.duration;$('time').textContent=`${t/60|0}:${String(t%60|0).padStart(2,'0')} / ${v.duration/60|0}:${String(v.duration%60|0).padStart(2,'0')}`};
@@ -300,16 +499,25 @@ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{view=b.datas
 
 async function removeCur(){
   const it=items[cur];if(!it)return;
-  const idx=cur;unmount(it);
-  all=all.filter(x=>x!==it);items.splice(idx,1);it.el.remove();
+  if(it.native&&it.own){                    // own folder: no trash -> ask once per session
+    let ok=false;try{ok=sessionStorage.getItem('nsDelOk')==='1'}catch(e){}
+    if(!ok){if(!confirm('Permanently delete from your phone?\n\nFolders you picked yourself have no trash. (You’ll only be asked once per session.)'))return;try{sessionStorage.setItem('nsDelOk','1')}catch(e){}}
+    const v=vid();if(v)v.pause();trashItem=it;Android.deleteDocs(JSON.stringify([it.nid]));return}
+  if(it.native){const v=vid();if(v)v.pause();trashItem=it;Android.trash(JSON.stringify([it.nid]));return}   // Android asks to confirm
   if(it.stored){try{await dbDel('items',it.id);await dbDel('blobs',it.id)}catch(e){}}else temp.delete(it.id);
-  toast('Aus Nightshift entfernt – auf dem Handy bleibt die Datei');
+  dropItem(it,'Removed from Nightshift – the file stays on your phone');
+}
+function dropItem(it,msg){
+  const idx=items.indexOf(it);unmount(it);
+  all=all.filter(x=>x!==it);if(idx>=0)items.splice(idx,1);if(it.el)it.el.remove();
+  if(navigator.vibrate)try{navigator.vibrate(20)}catch(e){}
+  toast(msg);
   items.forEach((x,i)=>x.el.dataset.i=i);
   cur=-1;if(!items.length){render();return}
-  const n=Math.min(idx,items.length-1);feed.scrollTop=n*H;setCurrent(n);counts();showStore();
+  const n=Math.min(Math.max(0,idx),items.length-1);feed.scrollTop=n*H;setCurrent(n);counts();if(!NATIVE)showStore();
 }
 
-// ---------- Dateien hinzufügen ----------
+// ---------- Add files ----------
 function pick(mode){const el=mode==='save'?$('fileSave'):mode==='temp'?$('fileTemp'):$('fileDir');el.value='';el.click()}
 document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>pick(b.dataset.add));
 $('fileTemp').onchange=e=>addFiles([...e.target.files],false);
@@ -317,67 +525,77 @@ $('fileSave').onchange=e=>addFiles([...e.target.files],true);
 $('fileDir').onchange=e=>addFiles([...e.target.files],true);
 async function addFiles(files,store){
   files=files.filter(f=>kindOf(f));
-  if(!files.length){toast('Keine Videos oder Bilder dabei',true);return}
+  if(!files.length){toast('No videos or pics in there',true);return}
   const have=new Set(all.map(x=>x.key));
   const fresh=files.filter(f=>!have.has(keyOf(f)));
-  if(!fresh.length){toast('Schon alles in Nightshift');return}
+  if(!fresh.length){toast('Already in Nightshift');return}
   closePanel();
   if(store){
     try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}
     $('busy').classList.add('show');let done=0,failed=0;
     for(const f of fresh){
-      $('busyText').textContent=`Speichere ${done+1} von ${fresh.length} …`;$('busyBar').style.width=(done/fresh.length*100)+'%';
+      $('busyText').textContent=`Saving ${done+1} of ${fresh.length} …`;$('busyBar').style.width=(done/fresh.length*100)+'%';
       const id='s'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
       const meta={id,key:keyOf(f),name:f.name,kind:kindOf(f),size:f.size,mtime:f.lastModified||Date.now(),added:Date.now()};
       try{
-        const blob=f.slice(0,f.size,f.type);           // eigene Kopie, unabhängig von der Auswahl
+        const blob=f.slice(0,f.size,f.type);           // own copy, independent of the selection
         await dbPut('blobs',blob,id);await dbPut('items',meta);
         all.push(Object.assign(meta,{stored:true}));
-      }catch(e){failed++;if(/quota/i.test(String(e&&e.name))){toast('Handy-Speicher für Nightshift voll – nimm „Nur jetzt ansehen“',true);break}}
+      }catch(e){failed++;if(/quota/i.test(String(e&&e.name))){toast('Phone storage for Nightshift is full – use “Just watch now”',true);break}}
       done++;
     }
     $('busy').classList.remove('show');
-    toast(failed?`${done-failed} gespeichert, ${failed} nicht`:`${done} ${done===1?'Datei':'Dateien'} gespeichert`,!!failed);
+    toast(failed?`${done-failed} saved, ${failed} not`:`${done} ${done===1?'file':'files'} saved`,!!failed);
   }else{
     for(const f of fresh){const id='t'+Math.random().toString(36).slice(2,10);temp.set(id,f);
       all.push({id,key:keyOf(f),name:f.name,kind:kindOf(f),size:f.size,mtime:f.lastModified||Date.now(),stored:false})}
     const marks=await allMarks();for(const x of all)if(!x.stored)Object.assign(x,marks.get(x.key)||{});
-    toast(`${fresh.length} zum Ansehen hinzugefügt`);
+    toast(`${fresh.length} added to watch`);
   }
   view='all';document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x.dataset.v==='all'));
   build();showStore();
 }
 
-// ---------- Menü ----------
-function openPanel(){try{history.pushState({p:1},'')}catch(e){}$('panel').classList.add('show');showStore();const v=vid();if(v)v.pause()}
+// ---------- Menu ----------
+function openPanel(){try{history.pushState({p:1},'')}catch(e){}$('panel').classList.add('show');NATIVE?showFolders():showStore();const v=vid();if(v)v.pause()}
 function closePanel(){if(!$('panel').classList.contains('show'))return;$('panel').classList.remove('show');const v=vid();if(v&&!$('pause').classList.contains('show'))play(v)}
 addEventListener('popstate',closePanel);
 $('menuBtn').onclick=openPanel;$('pClose').onclick=()=>history.back();$('panel').querySelector('.bg').onclick=()=>history.back();
 async function showStore(){
   const st=all.filter(x=>x.stored),tm=all.length-st.length,sz=st.reduce((a,x)=>a+x.size,0);
-  let h=`<div><b>${st.length}</b> gespeichert (${fmt(sz)})${tm?` · <b>${tm}</b> nur angesehen`:''}</div>`;
-  try{const e=await navigator.storage.estimate();if(e&&e.quota){h+=`<div class="bar"><i style="width:${Math.min(100,e.usage/e.quota*100).toFixed(1)}%"></i></div><div class="hint">${fmt(e.usage)} von ${fmt(e.quota)} App-Speicher belegt</div>`}}catch(e){}
+  let h=`<div><b>${st.length}</b> saved (${fmt(sz)})${tm?` · <b>${tm}</b> view only`:''}</div>`;
+  try{const e=await navigator.storage.estimate();if(e&&e.quota){h+=`<div class="bar"><i style="width:${Math.min(100,e.usage/e.quota*100).toFixed(1)}%"></i></div><div class="hint">${fmt(e.usage)} of ${fmt(e.quota)} app storage used</div>`}}catch(e){}
   $('store').innerHTML=h;
 }
 $('newFirst').onchange=e=>{newFirst=e.target.checked;setPref('newFirst',newFirst);build(items[cur]&&items[cur].id)};
-$('seenReset').onclick=async()=>{for(const x of all){x.seenAt=0;saveMark(x)}toast('Alles ist wieder neu');history.back();build()};
-$('wipe').onclick=async()=>{if(!confirm('Alle Dateien aus Nightshift entfernen? Auf dem Handy bleiben sie.'))return;
-  await tx('items','readwrite',s=>s.clear());await tx('blobs','readwrite',s=>s.clear());temp.clear();all=[];history.back();build();showStore();toast('Nightshift ist leer')};
+$('seenReset').onclick=async()=>{for(const x of all){x.seenAt=0;saveMark(x)}toast('Everything is new again');history.back();build()};
+$('wipe').onclick=async()=>{if(!confirm('Remove all files from Nightshift? They’ll stay on your phone.'))return;
+  await tx('items','readwrite',s=>s.clear());await tx('blobs','readwrite',s=>s.clear());temp.clear();all=[];history.back();build();showStore();toast('Nightshift is empty')};
 
-// Tastatur (falls am Tablet/PC)
-addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='j'){e.preventDefault();go(1)}else if(e.key==='ArrowUp'||e.key==='k'){e.preventDefault();go(-1)}else if(e.key==='l')like();else if(e.key==='m')$('muteBtn').click()});
-// Bildschirm anlassen, solange ein Video läuft
+// keyboard (on tablet/PC)
+addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='j'){e.preventDefault();go(1)}else if(e.key==='ArrowUp'||e.key==='k'){e.preventDefault();go(-1)}else if(e.key==='l')like();else if(e.key==='m')$('muteBtn').click()
+  else if(e.key==='h')toggleClean();else if(e.key===' '){e.preventDefault();togglePlay()}else if(e.key==='ArrowLeft')seek('l');else if(e.key==='ArrowRight')seek('r')});
+// keep the screen on while a video plays
 let wake=null;async function keepAwake(){try{if('wakeLock' in navigator&&!document.hidden)wake=await navigator.wakeLock.request('screen')}catch(e){}}
 document.addEventListener('visibilitychange',()=>{const v=vid();if(document.hidden){if(v)v.pause()}else{keepAwake();if(v&&!$('pause').classList.contains('show'))play(v)}});
 
 // Start
 (async()=>{
+  if(NATIVE){
+    document.body.classList.add('native');muted=false;mutedHintDone=true;
+    $('hideBtn').lastChild.textContent='Delete';
+    $('permBtn').onclick=()=>Android.requestPermission();
+    $('pickFolders').onclick=openPanel;
+    $('pickOwn').onclick=()=>Android.pickFolder();
+    $('rescan').onclick=async()=>{await loadNative();build();toast(all.length+' files');showFolders()};
+  }
   if(IOS||!('webkitdirectory' in document.createElement('input')))document.querySelectorAll('.folderOnly').forEach(b=>b.style.display='none');
   $('installHint').innerHTML=matchMedia('(display-mode: standalone)').matches||navigator.standalone?'':
-    IOS?'<b>Als App ablegen:</b> In Safari <b>Teilen</b> ↑ → <b>Zum Home-Bildschirm</b>. Danach startet Nightshift auch ohne Internet.'
-       :'<b>Als App ablegen:</b> In Chrome <b>⋮</b> → <b>App installieren</b> bzw. <b>Zum Startbildschirm hinzufügen</b>. Danach startet Nightshift auch ohne Internet.';
-  try{await openDB()}catch(e){toast('Speicher nicht verfügbar – privater Modus? Dann geht nur „Nur jetzt ansehen“.',true);db=null}
-  if(db){shuffled=await pref('shuffled',false);autoplay=await pref('autoplay',false);newFirst=await pref('newFirst',true);$('newFirst').checked=newFirst;await loadAll()}
+    IOS?'<b>Add as app:</b> In Safari tap <b>Share</b> ↑ → <b>Add to Home Screen</b>. After that, Nightshift starts even without internet.'
+       :'<b>Add as app:</b> In Chrome tap <b>⋮</b> → <b>Install app</b> or <b>Add to Home screen</b>. After that, Nightshift starts even without internet.';
+  try{await openDB()}catch(e){toast('Storage not available – private mode? Then only “Just watch now” works.',true);db=null}
+  if(db){shuffled=await pref('shuffled',false);autoplay=await pref('autoplay',false);setClean(await pref('clean',false),true);newFirst=await pref('newFirst',true);$('newFirst').checked=newFirst;await loadAll()}
+  if(NATIVE){await nativeStart();return}
   build();keepAwake();
   if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();

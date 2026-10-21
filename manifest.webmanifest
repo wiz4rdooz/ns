@@ -1,7 +1,7 @@
 {
   "name": "Nightshift",
   "short_name": "Nightshift",
-  "description": "Deine Videos & Bilder vom Handy als Feed – offline, ohne PC.",
+  "description": "Your phone’s videos & pics as a feed – offline, no PC needed.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
