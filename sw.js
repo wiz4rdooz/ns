@@ -1,5 +1,5 @@
 // Nightshift Mobil – hält die App offline bereit (nur die App selbst, nie deine Dateien)
-const CACHE = 'nightshift-mobil-v7';
+const CACHE = 'nightshift-mobil-v9';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

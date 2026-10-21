@@ -327,7 +327,8 @@ async function mount(it,active){
   const u=await urlFor(it);if(!u||!it.el.dataset.m)return;
   it.el.classList.toggle('new',!it.seenAt);
   if(it.kind==='video'){
-    const v=document.createElement('video');v.playsInline=true;v.setAttribute('playsinline','');v.muted=muted;v.loop=!autoplay;v.preload='metadata';v.src=u;
+    const v=document.createElement('video');v.playsInline=true;v.setAttribute('playsinline','');v.muted=muted;v.loop=!autoplay;v.preload=Math.abs(items.indexOf(it)-cur)<=1?'auto':'metadata';v.poster=BLANK;v.src=u;
+    stillFrame(v);
     v.addEventListener('ended',()=>{if(autoplay&&items[cur]===it)go(1)});
     v.addEventListener('timeupdate',()=>{if(items[cur]===it)updProg()});
     it.el.appendChild(v);
@@ -339,6 +340,13 @@ async function mount(it,active){
     it.el.append(bg,im);
   }
 }
+// no grey play placeholder: grab the first frame as the poster so the next video is already visible underneath
+const BLANK='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+function stillFrame(v){
+  v.addEventListener('loadedmetadata',()=>{if(v.paused&&v.currentTime===0)try{v.currentTime=.05}catch(e){}},{once:true});   // iPhone: forces a frame to be drawn
+  const grab=()=>{if(v.dataset.pf||!v.videoWidth)return;try{const k=Math.min(1,540/Math.max(v.videoWidth,v.videoHeight)),c=document.createElement('canvas');
+    c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);c.getContext('2d').drawImage(v,0,0,c.width,c.height);v.poster=c.toDataURL('image/jpeg',.75);v.dataset.pf='1'}catch(e){}};
+  v.addEventListener('loadeddata',grab,{once:true});v.addEventListener('seeked',grab,{once:true})}
 function play(v){v.muted=muted;const p=v.play();if(p)p.catch(()=>{if(!muted)return;v.muted=true;v.play().catch(()=>{})})}
 let seenT=0,imgT=0,imgStart=0;
 function setCurrent(i){
@@ -347,6 +355,7 @@ function setCurrent(i){
   if(prev&&prev.el){const v=prev.el.querySelector('video');if(v)v.pause()}
   for(let j=0;j<items.length;j++){if(Math.abs(j-i)<=2)mount(items[j]);else if(items[j].el&&items[j].el.dataset.m)unmount(items[j])}
   const v=it.el.querySelector('video');if(v){v.loop=!autoplay;play(v)}
+  for(const d of [1,-1]){const n=items[i+d],nv=n&&n.el&&n.el.querySelector('video');if(nv&&nv.preload!=='auto')nv.preload='auto'}
   $('pause').classList.remove('show');
   clearTimeout(seenT);if(!it.seenAt)seenT=setTimeout(()=>{if(items[cur]===it){it.seenAt=Date.now();saveMark(it)}},600);
   clearTimeout(imgT);imgStart=Date.now();if(it.kind==='image'&&autoplay)imgT=setTimeout(()=>{if(items[cur]===it)go(1)},5000);
@@ -374,7 +383,7 @@ function updProg(){
 setInterval(()=>{if(items[cur]&&items[cur].kind==='image'&&autoplay)updProg()},200);
 function go(d){const n=cur+d;if(n>=items.length){if(items.length){feed.scrollTo({top:0,behavior:'instant'});setCurrent(0);toast('You’re all caught up – starting over')}return}if(n<0)return;feed.scrollTo({top:n*H,behavior:'smooth'})}
 let raf=0;
-feed.addEventListener('scroll',()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;const i=Math.round(feed.scrollTop/H);if(Math.abs(feed.scrollTop-i*H)<H*.35)setCurrent(Math.max(0,Math.min(items.length-1,i)))})},{passive:true});
+feed.addEventListener('scroll',()=>{if(SW.c||Date.now()<SW.lock){if(SW.keep!=null&&Math.abs(feed.scrollTop-SW.keep)>2)feed.scrollTop=SW.keep;return}if(raf)return;raf=requestAnimationFrame(()=>{raf=0;const i=Math.round(feed.scrollTop/H);if(Math.abs(feed.scrollTop-i*H)<H*.35)setCurrent(Math.max(0,Math.min(items.length-1,i)))})},{passive:true});
 addEventListener('resize',()=>{H=innerHeight;document.documentElement.style.setProperty('--vh',H+'px');if(cur>=0)feed.scrollTop=cur*H});
 document.documentElement.style.setProperty('--vh',H+'px');
 
@@ -438,10 +447,16 @@ feed.addEventListener('pointermove',e=>{const p=PT.get(e.pointerId);if(!p)return
   const q=SW.p;if(!q||q.id!==e.pointerId||hold||PT.size>1)return;
   const dx=e.clientX-q.x,dy=e.clientY-q.y;
   if(!q.on){if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)*1.2)swDragStart();else return}
-  q.dx=dx;swSet(dx)});
+  q.dx=dx;const now=performance.now();(q.h||(q.h=[])).push({t:now,x:e.clientX});while(q.h.length>2&&now-q.h[0].t>120)q.h.shift();swSet(dx)});
+// a real swipe = finger still moving fast in that direction when let go. Dragged halfway and held still = springs back.
+// switch only when really dragged across: at least half the screen, and not pulled back at the end. Otherwise it springs back.
+const SW_GO=.5;
+function swFlick(q,e){const h=q.h||[],W=innerWidth;if(Math.abs(q.dx)<W*SW_GO)return false;
+  if(h.length>1){const f=h[0],l=h[h.length-1];if(performance.now()-l.t<90&&Math.sign(l.x-f.x)===-Math.sign(q.dx)&&Math.abs(l.x-f.x)>8)return false}   // pulling back
+  return true}
 const ptUp=e=>{if(!PT.has(e.pointerId))return;PT.delete(e.pointerId);clearTimeout(holdT);
   if(SW.p&&SW.p.id===e.pointerId){const q=SW.p;SW.p=null;if(q.on){noClick=Date.now()+400;clearTimeout(tapT);lastTap=0;
-    if(e.type!=='pointercancel'&&Math.abs(q.dx)>Math.min(110,innerWidth*.25))swCommit(q.dx>0);else swBack()}}
+    if(e.type!=='pointercancel'&&swFlick(q,e))swCommit(q.dx>0);else swBack()}}
   if(hold&&e.type==='pointercancel')endHold();
   if(PT.size)return;
   if(hold)endHold();
@@ -449,23 +464,24 @@ const ptUp=e=>{if(!PT.has(e.pointerId))return;PT.delete(e.pointerId);clearTimeou
 feed.addEventListener('pointerup',ptUp);feed.addEventListener('pointercancel',ptUp);
 feed.addEventListener('contextmenu',e=>e.preventDefault());
 // ---- swipe right = like & next, left = next. The next video already lies underneath.
-const SW={p:null,busy:false,c:null,n:null};
+const SW={p:null,busy:false,c:null,n:null,lock:0,keep:null};
 function swDragStart(){const it=items[cur];SW.p.on=true;clearTimeout(holdT);clearTimeout(tapT);lastTap=0;
-  SW.c=it.el;SW.c.classList.add('drag');SW.c.style.transition='none';
+  SW.keep=cur*H;feed.style.overflowY='hidden';SW.c=it.el;SW.c.classList.add('drag');SW.c.style.transition='none';
   const n=items[cur+1];SW.n=n&&n.el?n.el:null;if(SW.n){mount(n);SW.n.classList.add('under');SW.n.style.transform=`translateY(-${H}px)`}}
-function swSet(dx){SW.c.style.transform=`translateX(${dx}px) rotate(${dx/22}deg)`;
-  $('stLike').style.opacity=Math.max(0,Math.min(1,dx/90));$('stNope').style.opacity=Math.max(0,Math.min(1,-dx/90))}
-function swClean(){const c=SW.c,n=SW.n;SW.c=SW.n=null;
+function swSet(dx){SW.c.style.transform=`translateX(${dx}px) rotate(${dx/22}deg)`;const g=innerWidth*SW_GO;      // stamp is fully visible exactly when letting go will switch
+  $('stLike').style.opacity=dx>=g?1:Math.max(0,dx/g*.45);$('stNope').style.opacity=-dx>=g?1:Math.max(0,-dx/g*.45)}
+function swClean(){const c=SW.c,n=SW.n;SW.c=SW.n=null;feed.style.overflowY='';
   if(c){c.classList.remove('drag');c.style.transition='';c.style.transform=''}
   if(n){n.classList.remove('under');n.style.transform=''}
   $('stLike').style.opacity=0;$('stNope').style.opacity=0}
-function swBack(){const c=SW.c;if(!c)return;SW.busy=true;c.style.transition='transform .2s ease-out';c.style.transform='';
-  $('stLike').style.opacity=0;$('stNope').style.opacity=0;setTimeout(()=>{swClean();SW.busy=false},210)}
+function swBack(){const c=SW.c;if(!c)return;SW.busy=true;SW.lock=Date.now()+400;c.style.transition='transform .2s ease-out';c.style.transform='';
+  $('stLike').style.opacity=0;$('stNope').style.opacity=0;setTimeout(()=>{swClean();feed.scrollTop=SW.keep;SW.busy=false},210)}
 function swCommit(yes){const c=SW.c;if(!c)return;SW.busy=true;
   if(yes){like(true,innerWidth/2,innerHeight/2)}
   const v=c.querySelector('video');
   c.style.transition='transform .22s ease-in';c.style.transform=`translateX(${yes?140:-140}%) rotate(${yes?22:-22}deg)`;
   setTimeout(()=>{const had=!!SW.n,i=cur;if(v)v.pause();swClean();
+    SW.keep=null;SW.lock=0;
     if(had){feed.scrollTo({top:(i+1)*H,behavior:'instant'});setCurrent(i+1)}else go(1);
     SW.busy=false},230)}
 let clean=false;
